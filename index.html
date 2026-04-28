@@ -2603,10 +2603,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
 <!-- ===== LOGIN PAGE ===== -->
 <div class="page" id="page-login">
-    <div class="page-container" style="max-width: 400px; text-align: center; padding: 60px 20px;">
-        <h1 class="page-title" data-t="login">تسجيل الدخول</h1>
-        <p style="color: var(--text-muted); margin-top: 20px;">قريباً...</p>
-    </div>
+    <div class="page-container" style="max-width: 480px; padding: 30px 20px;"></div>
+</div>
+
+<!-- ===== SIGNUP PAGE ===== -->
+<div class="page" id="page-signup">
+    <div class="page-container" style="max-width: 480px; padding: 30px 20px;"></div>
 </div>
 
 <!-- ===== FOOTER ===== -->
@@ -2881,7 +2883,8 @@ function navigate(page) {
         renderCities();
         if (typeof srPrefillCheckout === 'function') srPrefillCheckout();
     }
-    if (page === 'login' && typeof srRenderAccountPage === 'function') srRenderAccountPage();
+    if (page === 'login'  && typeof srRenderAccountPage === 'function') srRenderAccountPage();
+    if (page === 'signup' && typeof srRenderSignupPage  === 'function') srRenderSignupPage();
 }
 
 // ============ SIDE MENU ============
@@ -3514,7 +3517,7 @@ function srInitHeaderScroll() {
 })();
 
 // ============================================================
-// ============ REMEMBER ME (lightweight account) =============
+// ============ USER ACCOUNTS (local registration) ============
 // ============================================================
 const SR_USER_I18N = {
     rememberMe:       { AR: 'احفظني في هذا الجهاز للمرة القادمة', EN: 'Remember me on this device', FR: 'Se souvenir de moi sur cet appareil' },
@@ -3523,29 +3526,193 @@ const SR_USER_I18N = {
     myOrders:         { AR: 'طلباتي',                       EN: 'My Orders',             FR: 'Mes commandes' },
     signOut:          { AR: 'تسجيل الخروج',                EN: 'Sign Out',              FR: 'Déconnexion' },
     signedOut:        { AR: 'تم تسجيل الخروج',             EN: 'Signed out',            FR: 'Déconnecté' },
-    loginInfo:        { AR: 'لا حاجة للتسجيل. تابع طلباتك السابقة برقم هاتفك.', EN: 'No account needed. Track past orders with your phone.', FR: 'Pas besoin de compte. Suivez vos commandes avec votre téléphone.' },
-    forgetMe:         { AR: 'نسيان بياناتي',               EN: 'Forget Me',             FR: 'Effacer mes données' },
-    yourInfo:         { AR: 'بياناتك المحفوظة',            EN: 'Your saved info',        FR: 'Vos informations' },
+    forgetMe:         { AR: 'حذف الحساب',                  EN: 'Delete Account',        FR: 'Supprimer le compte' },
+    yourInfo:         { AR: 'بياناتك',                     EN: 'Your details',          FR: 'Vos informations' },
     continueAsGuest:  { AR: 'متابعة كزائر',                EN: 'Continue as guest',      FR: 'Continuer en invité' },
-    continueAsGuestNote: { AR: 'لا تحتاج إلى حساب — يمكنك التسوق مباشرة.', EN: 'No account needed — shop directly.', FR: 'Pas besoin de compte — magasinez directement.' },
-    phoneRequired:    { AR: 'أدخل رقم هاتفك',              EN: 'Enter your phone',       FR: 'Entrez votre téléphone' },
-    noOrdersForPhone: { AR: 'لم نعثر على طلبات بهذا الرقم على هذا الجهاز.', EN: 'No orders found for this phone on this device.', FR: 'Aucune commande pour ce téléphone sur cet appareil.' },
+
+    signUp:           { AR: 'إنشاء حساب',                  EN: 'Sign Up',               FR: 'Créer un compte' },
+    signIn:           { AR: 'تسجيل الدخول',                EN: 'Sign In',               FR: 'Se connecter' },
+    fullName:         { AR: 'الاسم الكامل',                EN: 'Full Name',             FR: 'Nom complet' },
+    email:            { AR: 'البريد الإلكتروني (اختياري)', EN: 'Email (optional)',      FR: 'E-mail (optionnel)' },
+    password:         { AR: 'كلمة المرور',                 EN: 'Password',              FR: 'Mot de passe' },
+    confirmPassword:  { AR: 'تأكيد كلمة المرور',            EN: 'Confirm Password',      FR: 'Confirmer le mot de passe' },
+    addressOpt:       { AR: 'العنوان (اختياري)',           EN: 'Address (optional)',    FR: 'Adresse (optionnelle)' },
+    cityOpt:          { AR: 'المدينة (اختياري)',           EN: 'City (optional)',       FR: 'Ville (optionnelle)' },
+    haveAccount:      { AR: 'لديك حساب بالفعل؟',           EN: 'Already have an account?', FR: 'Déjà un compte ?' },
+    noAccount:        { AR: 'لا تملك حساباً؟',             EN: "Don't have an account?", FR: "Pas de compte ?" },
+    createAccount:    { AR: 'أنشئ حساباً جديداً',          EN: 'Create one',            FR: 'Créer un compte' },
+    accountCreated:   { AR: 'تم إنشاء حسابك بنجاح',        EN: 'Account created!',      FR: 'Compte créé !' },
+    wrongCreds:       { AR: 'الهاتف أو كلمة المرور غير صحيحة', EN: 'Wrong phone or password', FR: 'Téléphone ou mot de passe incorrect' },
+    pwTooShort:       { AR: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل', EN: 'Password must be at least 4 characters', FR: 'Mot de passe trop court' },
+    pwMismatch:       { AR: 'كلمتا المرور غير متطابقتين',  EN: 'Passwords do not match', FR: 'Les mots de passe ne correspondent pas' },
+    phoneTaken:       { AR: 'هذا الرقم مسجل مسبقاً',       EN: 'This phone is already registered', FR: 'Ce téléphone est déjà enregistré' },
+    fillAllFields:    { AR: 'يرجى ملء جميع الحقول المطلوبة', EN: 'Please fill all required fields', FR: 'Veuillez remplir tous les champs' },
+    editProfile:      { AR: 'تعديل البيانات',              EN: 'Edit Profile',          FR: 'Modifier le profil' },
+    saveChanges:      { AR: 'حفظ التعديلات',               EN: 'Save Changes',          FR: 'Enregistrer' },
+    profileUpdated:   { AR: 'تم تحديث البيانات',           EN: 'Profile updated',       FR: 'Profil mis à jour' },
+    changePassword:   { AR: 'تغيير كلمة المرور',           EN: 'Change Password',       FR: 'Changer le mot de passe' },
+    currentPassword:  { AR: 'كلمة المرور الحالية',         EN: 'Current Password',      FR: 'Mot de passe actuel' },
+    newPassword:      { AR: 'كلمة المرور الجديدة',         EN: 'New Password',          FR: 'Nouveau mot de passe' },
+    passwordChanged:  { AR: 'تم تغيير كلمة المرور',        EN: 'Password changed',      FR: 'Mot de passe changé' },
+    confirmDelete:    { AR: 'هل أنت متأكد؟ سيُحذف حسابك نهائياً.', EN: 'Are you sure? Your account will be deleted.', FR: 'Confirmer la suppression du compte ?' },
+    accountDeleted:   { AR: 'تم حذف الحساب',               EN: 'Account deleted',       FR: 'Compte supprimé' },
+    welcome:          { AR: 'مرحباً بك',                   EN: 'Welcome',               FR: 'Bienvenue' },
 };
 function _u(key) {
     const o = SR_USER_I18N[key];
     return (o && o[currentLang]) || (o && o.EN) || key;
 }
 
+// ----- Password hashing (browser-native, SHA-256) -----
+async function srHashPassword(plain) {
+    const enc = new TextEncoder().encode(plain);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ----- Account storage -----
+function srGetAllUsers() {
+    try { return JSON.parse(localStorage.getItem('sr_users') || '[]'); }
+    catch (_) { return []; }
+}
+function srSaveAllUsers(arr) { localStorage.setItem('sr_users', JSON.stringify(arr)); }
+
+function srNormalizePhone(p) { return String(p || '').replace(/\D/g, ''); }
+
 function srGetUser() {
     try { return JSON.parse(localStorage.getItem('sr_user') || 'null'); }
     catch (_) { return null; }
 }
-function srSaveUser(data) {
-    localStorage.setItem('sr_user', JSON.stringify(Object.assign({}, srGetUser() || {}, data, { rememberedAt: new Date().toISOString() })));
-}
+function srSetUser(u) { localStorage.setItem('sr_user', JSON.stringify(u)); }
 function srClearUser() { localStorage.removeItem('sr_user'); }
-function srIsRemembered() { return !!srGetUser(); }
+function srSaveUser(patch) {
+    // Also patch the matching account in sr_users so registered fields stay in sync
+    const cur = srGetUser() || {};
+    const merged = Object.assign({}, cur, patch, { rememberedAt: new Date().toISOString() });
+    srSetUser(merged);
+    if (cur.phone) {
+        const all = srGetAllUsers();
+        const i = all.findIndex(x => srNormalizePhone(x.phone) === srNormalizePhone(cur.phone));
+        if (i >= 0) { all[i] = Object.assign({}, all[i], patch); srSaveAllUsers(all); }
+    }
+}
 
+// ----- Register / login / logout -----
+async function srRegister() {
+    const get = id => (document.getElementById(id) || {}).value || '';
+    const name    = get('regName').trim();
+    const phone   = get('regPhone').trim();
+    const email   = get('regEmail').trim();
+    const city    = get('regCity').trim();
+    const address = get('regAddress').trim();
+    const pw      = get('regPassword');
+    const pw2     = get('regPassword2');
+
+    if (!name || !phone || !pw) { showToast(_u('fillAllFields')); return; }
+    if (pw.length < 4) { showToast(_u('pwTooShort')); return; }
+    if (pw !== pw2)    { showToast(_u('pwMismatch')); return; }
+
+    const phoneN = srNormalizePhone(phone);
+    const all = srGetAllUsers();
+    if (all.some(u => srNormalizePhone(u.phone) === phoneN)) {
+        showToast(_u('phoneTaken')); return;
+    }
+    const passwordHash = await srHashPassword(pw);
+    const acct = { name, phone, email, city, address, passwordHash, createdAt: new Date().toISOString() };
+    all.push(acct);
+    srSaveAllUsers(all);
+    // Auto-login
+    const session = Object.assign({}, acct);
+    delete session.passwordHash;
+    srSetUser(session);
+    srUpdateHeaderUser();
+    showToast(_u('accountCreated'));
+    navigate('login');
+}
+
+async function srLogin() {
+    const get = id => (document.getElementById(id) || {}).value || '';
+    const id = get('loginId').trim();
+    const pw = get('loginPassword');
+    if (!id || !pw) { showToast(_u('fillAllFields')); return; }
+
+    const all = srGetAllUsers();
+    const idN = srNormalizePhone(id);
+    const acct = all.find(u =>
+        srNormalizePhone(u.phone) === idN ||
+        (u.email && u.email.toLowerCase() === id.toLowerCase())
+    );
+    if (!acct) { showToast(_u('wrongCreds')); return; }
+    const hashed = await srHashPassword(pw);
+    if (hashed !== acct.passwordHash) { showToast(_u('wrongCreds')); return; }
+
+    const session = Object.assign({}, acct);
+    delete session.passwordHash;
+    srSetUser(session);
+    srUpdateHeaderUser();
+    showToast(`${_u('welcomeBack')}, ${(acct.name || '').split(/\s+/)[0] || ''}`);
+    navigate('login');
+}
+
+function srSignOut() {
+    srClearUser();
+    srUpdateHeaderUser();
+    showToast(_u('signedOut'));
+    navigate('home');
+}
+
+async function srDeleteAccount() {
+    if (!confirm(_u('confirmDelete'))) return;
+    const cur = srGetUser();
+    if (cur && cur.phone) {
+        const all = srGetAllUsers();
+        srSaveAllUsers(all.filter(u => srNormalizePhone(u.phone) !== srNormalizePhone(cur.phone)));
+    }
+    srClearUser();
+    srUpdateHeaderUser();
+    showToast(_u('accountDeleted'));
+    navigate('home');
+}
+
+async function srSaveProfileEdits() {
+    const get = id => (document.getElementById(id) || {}).value || '';
+    const cur = srGetUser();
+    if (!cur) return;
+    const patch = {
+        name:    get('epName').trim()    || cur.name,
+        email:   get('epEmail').trim(),
+        city:    get('epCity').trim(),
+        address: get('epAddress').trim(),
+    };
+    if (!patch.name) { showToast(_u('fillAllFields')); return; }
+    srSaveUser(patch);
+    srUpdateHeaderUser();
+    showToast(_u('profileUpdated'));
+    srRenderAccountPage();
+}
+
+async function srChangePasswordSubmit() {
+    const get = id => (document.getElementById(id) || {}).value || '';
+    const oldPw = get('cpOld');
+    const newPw = get('cpNew');
+    const newPw2 = get('cpNew2');
+    if (!oldPw || !newPw) { showToast(_u('fillAllFields')); return; }
+    if (newPw.length < 4) { showToast(_u('pwTooShort')); return; }
+    if (newPw !== newPw2) { showToast(_u('pwMismatch')); return; }
+    const cur = srGetUser();
+    if (!cur) return;
+    const all = srGetAllUsers();
+    const i = all.findIndex(u => srNormalizePhone(u.phone) === srNormalizePhone(cur.phone));
+    if (i < 0) { showToast(_u('wrongCreds')); return; }
+    const oldHash = await srHashPassword(oldPw);
+    if (oldHash !== all[i].passwordHash) { showToast(_u('wrongCreds')); return; }
+    all[i].passwordHash = await srHashPassword(newPw);
+    srSaveAllUsers(all);
+    showToast(_u('passwordChanged'));
+    srRenderAccountPage();
+}
+
+// ----- Checkout prefill from current user -----
 function srPrefillCheckout() {
     const u = srGetUser();
     if (!u) return;
@@ -3556,6 +3723,7 @@ function srPrefillCheckout() {
     });
 }
 
+// ----- Header avatar / name -----
 function srUpdateHeaderUser() {
     const u = srGetUser();
     const btn = document.querySelector('.icon-link[onclick*="login"]');
@@ -3569,84 +3737,162 @@ function srUpdateHeaderUser() {
         btn.title = _u('myAccount');
     } else {
         span.setAttribute('data-t', 'login');
-        span.textContent = (translations[currentLang] && translations[currentLang].login) || 'Login';
+        span.textContent = (translations[currentLang] && translations[currentLang].login) || 'Sign in';
         btn.title = '';
     }
 }
 
+// ----- Page renderers -----
 function srRenderAccountPage() {
     const container = document.querySelector('#page-login .page-container');
     if (!container) return;
     const u = srGetUser();
     if (u) {
         container.innerHTML = `
-            <div style="text-align:center; padding: 30px 0 20px;">
-                <div style="width:80px; height:80px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:30px; font-weight:600;">${(u.name || '?').charAt(0).toUpperCase()}</div>
-                <h1 style="font-size:18px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('welcomeBack')}, ${srEscape ? srEscape(u.name) : u.name}</h1>
+            <div style="text-align:center; padding: 20px 0 12px;">
+                <div style="width:84px; height:84px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:34px; font-weight:600; box-shadow: 0 8px 24px rgba(184, 122, 101, 0.35);">${(u.name || '?').charAt(0).toUpperCase()}</div>
+                <h1 style="font-size:18px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('welcomeBack')}, ${u.name}</h1>
             </div>
-            <div style="background: var(--bg-cream); padding: 20px; border-radius: 12px; margin: 20px 0; line-height: 1.9;">
-                <div style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">${_u('yourInfo')}</div>
-                <div>📞 ${u.phone || ''}</div>
-                <div>🏙 ${u.city || ''}</div>
-                <div>📍 ${u.address || ''}</div>
+            <div class="section-box" style="border-radius:14px; margin-top:20px;">
+                <div style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;">${_u('yourInfo')}</div>
+                <div style="line-height:1.9;">
+                    <div>👤 ${u.name}</div>
+                    <div>📞 ${u.phone || '—'}</div>
+                    ${u.email ? `<div>✉ ${u.email}</div>` : ''}
+                    ${u.city ? `<div>🏙 ${u.city}</div>` : ''}
+                    ${u.address ? `<div>📍 ${u.address}</div>` : ''}
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:18px;">
+                    <button class="btn btn-outline" style="flex:1; min-width:130px;" onclick="srRenderEditProfile()">${_u('editProfile')}</button>
+                    <button class="btn btn-outline" style="flex:1; min-width:130px;" onclick="srRenderChangePassword()">${_u('changePassword')}</button>
+                </div>
             </div>
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
-                <button class="btn btn-dark" onclick="navigate('track')">${_u('myOrders')}</button>
-                <button class="btn btn-outline" onclick="srSignOut()">${_u('forgetMe')}</button>
+                <button class="btn btn-dark" style="flex:1;" onclick="navigate('track')">${_u('myOrders')}</button>
+                <button class="btn btn-outline" style="flex:1;" onclick="srSignOut()">${_u('signOut')}</button>
+            </div>
+            <div style="text-align:center; margin-top:24px;">
+                <button onclick="srDeleteAccount()" style="background:transparent; border:none; color:#C0392B; cursor:pointer; font-size:12px; text-decoration:underline; font-family:inherit;">${_u('forgetMe')}</button>
             </div>
         `;
     } else {
-        const loginLabel = (translations[currentLang] && translations[currentLang].login) || 'Sign in';
+        const loginLabel = _u('signIn');
         container.innerHTML = `
-            <div style="text-align:center; padding: 30px 0 14px;">
-                <div style="width:72px; height:72px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div style="text-align:center; padding: 24px 0 14px;">
+                <div style="width:72px; height:72px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
                 <h1 style="font-size:20px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${loginLabel}</h1>
-                <p style="color: var(--text-muted); margin-top: 12px; line-height: 1.7; font-size:13px;">${_u('loginInfo')}</p>
             </div>
-            <div class="section-box" style="border-radius: 14px; max-width: 420px; margin: 24px auto 0;">
+            <div class="section-box" style="border-radius: 14px;">
                 <div class="form-group">
-                    <label data-t="phone">${(translations[currentLang] && translations[currentLang].phone) || 'Phone'}</label>
-                    <input type="tel" class="form-input" id="srLoginPhone" placeholder="+212 6XX XX XX XX" onkeydown="if(event.key==='Enter')srLoginByPhone()">
+                    <label>${(translations[currentLang] && translations[currentLang].phone) || 'Phone'} / ${_u('email')}</label>
+                    <input type="text" class="form-input" id="loginId" placeholder="+212 6XX XX XX XX">
                 </div>
-                <button class="btn btn-dark" style="width:100%;" onclick="srLoginByPhone()">${loginLabel}</button>
-                <div style="text-align:center; margin-top:14px; font-size:12px; color:var(--text-muted);">${_u('continueAsGuestNote')}</div>
-                <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="navigate('shop')">${_u('continueAsGuest')}</button>
+                <div class="form-group">
+                    <label>${_u('password')}</label>
+                    <input type="password" class="form-input" id="loginPassword" onkeydown="if(event.key==='Enter')srLogin()">
+                </div>
+                <button class="btn btn-dark" style="width:100%;" onclick="srLogin()">${loginLabel}</button>
+                <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-muted);">
+                    ${_u('noAccount')} <a onclick="navigate('signup')" style="color:var(--brand-dark); cursor:pointer; font-weight:600;">${_u('createAccount')}</a>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:18px;">
+                <button class="btn btn-outline" onclick="navigate('shop')" style="padding:10px 24px;">${_u('continueAsGuest')}</button>
             </div>
         `;
     }
 }
 
-function srLoginByPhone() {
-    const inp = document.getElementById('srLoginPhone');
-    const phone = (inp && inp.value || '').trim();
-    if (!phone) { showToast(_u('phoneRequired')); return; }
-    const orders = (typeof getOrdersForPhone === 'function') ? getOrdersForPhone(phone) : [];
-    if (!orders.length) {
-        showToast(_u('noOrdersForPhone'));
-        return;
-    }
-    // Pull most-recent identity from the latest order
-    const latest = orders[0];
-    const c = latest.customer || {};
-    srSaveUser({
-        name:    c.name || '',
-        phone:   c.phone || phone,
-        city:    c.city || '',
-        address: c.address || '',
-    });
-    srUpdateHeaderUser();
-    showToast(`${_u('welcomeBack')}, ${(c.name || '').split(/\s+/)[0] || ''}`);
-    srRenderAccountPage();
+function srRenderSignupPage() {
+    const container = document.querySelector('#page-signup .page-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="text-align:center; padding: 20px 0 14px;">
+            <div style="width:72px; height:72px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            </div>
+            <h1 style="font-size:20px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('signUp')}</h1>
+        </div>
+        <div class="section-box" style="border-radius: 14px;">
+            <div class="form-group">
+                <label>${_u('fullName')}</label>
+                <input type="text" class="form-input" id="regName">
+            </div>
+            <div class="form-group">
+                <label>${(translations[currentLang] && translations[currentLang].phone) || 'Phone'}</label>
+                <input type="tel" class="form-input" id="regPhone" placeholder="+212 6XX XX XX XX">
+            </div>
+            <div class="form-group">
+                <label>${_u('email')}</label>
+                <input type="email" class="form-input" id="regEmail">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>${_u('cityOpt')}</label>
+                    <input type="text" class="form-input" id="regCity">
+                </div>
+                <div class="form-group">
+                    <label>${_u('addressOpt')}</label>
+                    <input type="text" class="form-input" id="regAddress">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>${_u('password')}</label>
+                <input type="password" class="form-input" id="regPassword">
+            </div>
+            <div class="form-group">
+                <label>${_u('confirmPassword')}</label>
+                <input type="password" class="form-input" id="regPassword2" onkeydown="if(event.key==='Enter')srRegister()">
+            </div>
+            <button class="btn btn-dark" style="width:100%;" onclick="srRegister()">${_u('signUp')}</button>
+            <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-muted);">
+                ${_u('haveAccount')} <a onclick="navigate('login')" style="color:var(--brand-dark); cursor:pointer; font-weight:600;">${_u('signIn')}</a>
+            </div>
+        </div>
+    `;
 }
 
-function srSignOut() {
-    if (!confirm(_u('forgetMe') + '?')) return;
-    srClearUser();
-    srUpdateHeaderUser();
-    showToast(_u('signedOut'));
-    navigate('home');
+function srRenderEditProfile() {
+    const u = srGetUser();
+    if (!u) return;
+    const container = document.querySelector('#page-login .page-container');
+    container.innerHTML = `
+        <div style="text-align:center; padding: 24px 0 14px;">
+            <h1 style="font-size:20px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('editProfile')}</h1>
+        </div>
+        <div class="section-box" style="border-radius: 14px;">
+            <div class="form-group"><label>${_u('fullName')}</label><input type="text" class="form-input" id="epName" value="${(u.name||'').replace(/"/g,'&quot;')}"></div>
+            <div class="form-group"><label>${_u('email')}</label><input type="email" class="form-input" id="epEmail" value="${(u.email||'').replace(/"/g,'&quot;')}"></div>
+            <div class="form-group"><label>${_u('cityOpt')}</label><input type="text" class="form-input" id="epCity" value="${(u.city||'').replace(/"/g,'&quot;')}"></div>
+            <div class="form-group"><label>${_u('addressOpt')}</label><input type="text" class="form-input" id="epAddress" value="${(u.address||'').replace(/"/g,'&quot;')}"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-dark" style="flex:1;" onclick="srSaveProfileEdits()">${_u('saveChanges')}</button>
+                <button class="btn btn-outline" style="flex:1;" onclick="srRenderAccountPage()">${_u('signOut').replace(_u('signOut'), (translations[currentLang]&&translations[currentLang].cancel)||'Cancel')}</button>
+            </div>
+        </div>
+    `;
+}
+
+function srRenderChangePassword() {
+    const u = srGetUser();
+    if (!u) return;
+    const container = document.querySelector('#page-login .page-container');
+    container.innerHTML = `
+        <div style="text-align:center; padding: 24px 0 14px;">
+            <h1 style="font-size:20px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('changePassword')}</h1>
+        </div>
+        <div class="section-box" style="border-radius: 14px;">
+            <div class="form-group"><label>${_u('currentPassword')}</label><input type="password" class="form-input" id="cpOld"></div>
+            <div class="form-group"><label>${_u('newPassword')}</label><input type="password" class="form-input" id="cpNew"></div>
+            <div class="form-group"><label>${_u('confirmPassword')}</label><input type="password" class="form-input" id="cpNew2"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-dark" style="flex:1;" onclick="srChangePasswordSubmit()">${_u('saveChanges')}</button>
+                <button class="btn btn-outline" style="flex:1;" onclick="srRenderAccountPage()">${(translations[currentLang]&&translations[currentLang].cancel)||'Cancel'}</button>
+            </div>
+        </div>
+    `;
 }
 
 // ============================================================
