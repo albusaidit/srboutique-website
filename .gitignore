@@ -1,0 +1,6 @@
+.claude/
+.DS_Store
+Thumbs.db
+*.log
+_extract.js
+_logo_extracted.*
