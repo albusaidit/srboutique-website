@@ -3526,6 +3526,10 @@ const SR_USER_I18N = {
     loginInfo:        { AR: 'لا حاجة للتسجيل. تابع طلباتك السابقة برقم هاتفك.', EN: 'No account needed. Track past orders with your phone.', FR: 'Pas besoin de compte. Suivez vos commandes avec votre téléphone.' },
     forgetMe:         { AR: 'نسيان بياناتي',               EN: 'Forget Me',             FR: 'Effacer mes données' },
     yourInfo:         { AR: 'بياناتك المحفوظة',            EN: 'Your saved info',        FR: 'Vos informations' },
+    continueAsGuest:  { AR: 'متابعة كزائر',                EN: 'Continue as guest',      FR: 'Continuer en invité' },
+    continueAsGuestNote: { AR: 'لا تحتاج إلى حساب — يمكنك التسوق مباشرة.', EN: 'No account needed — shop directly.', FR: 'Pas besoin de compte — magasinez directement.' },
+    phoneRequired:    { AR: 'أدخل رقم هاتفك',              EN: 'Enter your phone',       FR: 'Entrez votre téléphone' },
+    noOrdersForPhone: { AR: 'لم نعثر على طلبات بهذا الرقم على هذا الجهاز.', EN: 'No orders found for this phone on this device.', FR: 'Aucune commande pour ce téléphone sur cet appareil.' },
 };
 function _u(key) {
     const o = SR_USER_I18N[key];
@@ -3592,17 +3596,49 @@ function srRenderAccountPage() {
             </div>
         `;
     } else {
+        const loginLabel = (translations[currentLang] && translations[currentLang].login) || 'Sign in';
         container.innerHTML = `
-            <div style="text-align:center; padding:40px 20px;">
-                <h1 class="page-title">${(translations[currentLang] && translations[currentLang].login) || 'Login'}</h1>
-                <p style="color: var(--text-muted); margin-top: 20px; line-height: 1.7;">${_u('loginInfo')}</p>
-                <div style="display:flex; gap:10px; justify-content:center; margin-top:24px; flex-wrap:wrap;">
-                    <button class="btn btn-dark" onclick="navigate('track')">${(translations[currentLang] && translations[currentLang].trackOrder) || 'Track Order'}</button>
-                    <button class="btn btn-outline" onclick="navigate('shop')">${(translations[currentLang] && translations[currentLang].continueShopping) || 'Continue'}</button>
+            <div style="text-align:center; padding: 30px 0 14px;">
+                <div style="width:72px; height:72px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
+                <h1 style="font-size:20px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${loginLabel}</h1>
+                <p style="color: var(--text-muted); margin-top: 12px; line-height: 1.7; font-size:13px;">${_u('loginInfo')}</p>
+            </div>
+            <div class="section-box" style="border-radius: 14px; max-width: 420px; margin: 24px auto 0;">
+                <div class="form-group">
+                    <label data-t="phone">${(translations[currentLang] && translations[currentLang].phone) || 'Phone'}</label>
+                    <input type="tel" class="form-input" id="srLoginPhone" placeholder="+212 6XX XX XX XX" onkeydown="if(event.key==='Enter')srLoginByPhone()">
+                </div>
+                <button class="btn btn-dark" style="width:100%;" onclick="srLoginByPhone()">${loginLabel}</button>
+                <div style="text-align:center; margin-top:14px; font-size:12px; color:var(--text-muted);">${_u('continueAsGuestNote')}</div>
+                <button class="btn btn-outline" style="width:100%; margin-top:10px;" onclick="navigate('shop')">${_u('continueAsGuest')}</button>
             </div>
         `;
     }
+}
+
+function srLoginByPhone() {
+    const inp = document.getElementById('srLoginPhone');
+    const phone = (inp && inp.value || '').trim();
+    if (!phone) { showToast(_u('phoneRequired')); return; }
+    const orders = (typeof getOrdersForPhone === 'function') ? getOrdersForPhone(phone) : [];
+    if (!orders.length) {
+        showToast(_u('noOrdersForPhone'));
+        return;
+    }
+    // Pull most-recent identity from the latest order
+    const latest = orders[0];
+    const c = latest.customer || {};
+    srSaveUser({
+        name:    c.name || '',
+        phone:   c.phone || phone,
+        city:    c.city || '',
+        address: c.address || '',
+    });
+    srUpdateHeaderUser();
+    showToast(`${_u('welcomeBack')}, ${(c.name || '').split(/\s+/)[0] || ''}`);
+    srRenderAccountPage();
 }
 
 function srSignOut() {
