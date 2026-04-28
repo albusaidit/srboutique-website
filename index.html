@@ -2529,6 +2529,10 @@ window.addEventListener('DOMContentLoaded', () => {
                         <label data-t="notes">ملاحظات</label>
                         <input type="text" class="form-input" id="formNotes">
                     </div>
+                    <div class="form-group" style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--bg-cream); border-radius:8px; cursor:pointer;" onclick="document.getElementById('formRememberMe').click()">
+                        <input type="checkbox" id="formRememberMe" checked style="width:18px; height:18px; accent-color: var(--brand); cursor:pointer; margin:0;" onclick="event.stopPropagation()">
+                        <label for="formRememberMe" data-t="rememberMe" style="margin:0; cursor:pointer; font-size:13px; flex:1; text-transform:none; letter-spacing:normal; font-weight:500;">احفظني في هذا الجهاز للمرة القادمة</label>
+                    </div>
                 </div>
                 <div class="section-box">
                     <h3 data-t="cashOnDelivery">طريقة الدفع</h3>
@@ -2831,6 +2835,8 @@ function t(key) {
 
 function setLang(lang) {
     currentLang = lang;
+    if (typeof srEnsureTrackTranslations === 'function') srEnsureTrackTranslations();
+    if (typeof srUpdateHeaderUser === 'function') srUpdateHeaderUser();
     document.documentElement.lang = lang.toLowerCase();
     document.documentElement.dir = lang === 'AR' ? 'rtl' : 'ltr';
     
@@ -2873,7 +2879,9 @@ function navigate(page) {
     if (page === 'checkout') {
         renderCheckoutSummary();
         renderCities();
+        if (typeof srPrefillCheckout === 'function') srPrefillCheckout();
     }
+    if (page === 'login' && typeof srRenderAccountPage === 'function') srRenderAccountPage();
 }
 
 // ============ SIDE MENU ============
@@ -2893,9 +2901,16 @@ function srEnsureTrackTranslations() {
     if (!translations.AR) translations.AR = {};
     if (!translations.EN) translations.EN = {};
     if (!translations.FR) translations.FR = {};
-    if (!translations.AR.trackOrder) translations.AR.trackOrder = 'تتبع الطلب';
-    if (!translations.EN.trackOrder) translations.EN.trackOrder = 'Track Order';
-    if (!translations.FR.trackOrder) translations.FR.trackOrder = 'Suivre la commande';
+    const extras = {
+        trackOrder: ['تتبع الطلب', 'Track Order', 'Suivre la commande'],
+        rememberMe: ['احفظني في هذا الجهاز للمرة القادمة', 'Remember me on this device', 'Se souvenir de moi sur cet appareil'],
+    };
+    Object.keys(extras).forEach(k => {
+        const [ar, en, fr] = extras[k];
+        if (!translations.AR[k]) translations.AR[k] = ar;
+        if (!translations.EN[k]) translations.EN[k] = en;
+        if (!translations.FR[k]) translations.FR[k] = fr;
+    });
 }
 function renderSideMenu() {
     srEnsureTrackTranslations();
@@ -3383,6 +3398,17 @@ function placeOrder() {
     msg += `\n💎 ${t('total')}: ${total} د.م`;
     msg += `\n\n💵 ${t('cashOnDelivery')}`;
     
+    // Honor the Remember Me checkbox
+    try {
+        const remember = document.getElementById('formRememberMe');
+        if (remember && remember.checked) {
+            srSaveUser({ name, phone, city, address });
+        } else if (remember && !remember.checked) {
+            srClearUser();
+        }
+        if (typeof srUpdateHeaderUser === 'function') srUpdateHeaderUser();
+    } catch (_) {}
+
     if (typeof srOpenWhatsApp === 'function') srOpenWhatsApp(WHATSAPP, msg);
     else window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP}&text=${encodeURIComponent(msg)}`, '_blank');
 
@@ -3486,6 +3512,106 @@ function srInitHeaderScroll() {
     };
     ['renderBestSellers', 'renderProducts'].forEach(wrap);
 })();
+
+// ============================================================
+// ============ REMEMBER ME (lightweight account) =============
+// ============================================================
+const SR_USER_I18N = {
+    rememberMe:       { AR: 'احفظني في هذا الجهاز للمرة القادمة', EN: 'Remember me on this device', FR: 'Se souvenir de moi sur cet appareil' },
+    welcomeBack:      { AR: 'أهلاً بعودتك',                EN: 'Welcome back',          FR: 'Bon retour' },
+    myAccount:        { AR: 'حسابي',                       EN: 'My Account',            FR: 'Mon compte' },
+    myOrders:         { AR: 'طلباتي',                       EN: 'My Orders',             FR: 'Mes commandes' },
+    signOut:          { AR: 'تسجيل الخروج',                EN: 'Sign Out',              FR: 'Déconnexion' },
+    signedOut:        { AR: 'تم تسجيل الخروج',             EN: 'Signed out',            FR: 'Déconnecté' },
+    loginInfo:        { AR: 'لا حاجة للتسجيل. تابع طلباتك السابقة برقم هاتفك.', EN: 'No account needed. Track past orders with your phone.', FR: 'Pas besoin de compte. Suivez vos commandes avec votre téléphone.' },
+    forgetMe:         { AR: 'نسيان بياناتي',               EN: 'Forget Me',             FR: 'Effacer mes données' },
+    yourInfo:         { AR: 'بياناتك المحفوظة',            EN: 'Your saved info',        FR: 'Vos informations' },
+};
+function _u(key) {
+    const o = SR_USER_I18N[key];
+    return (o && o[currentLang]) || (o && o.EN) || key;
+}
+
+function srGetUser() {
+    try { return JSON.parse(localStorage.getItem('sr_user') || 'null'); }
+    catch (_) { return null; }
+}
+function srSaveUser(data) {
+    localStorage.setItem('sr_user', JSON.stringify(Object.assign({}, srGetUser() || {}, data, { rememberedAt: new Date().toISOString() })));
+}
+function srClearUser() { localStorage.removeItem('sr_user'); }
+function srIsRemembered() { return !!srGetUser(); }
+
+function srPrefillCheckout() {
+    const u = srGetUser();
+    if (!u) return;
+    const map = { formName: 'name', formPhone: 'phone', formCity: 'city', formAddress: 'address' };
+    Object.keys(map).forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value && u[map[id]]) el.value = u[map[id]];
+    });
+}
+
+function srUpdateHeaderUser() {
+    const u = srGetUser();
+    const btn = document.querySelector('.icon-link[onclick*="login"]');
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    if (!span) return;
+    if (u && u.name) {
+        const first = String(u.name).trim().split(/\s+/)[0];
+        span.textContent = first;
+        span.removeAttribute('data-t');
+        btn.title = _u('myAccount');
+    } else {
+        span.setAttribute('data-t', 'login');
+        span.textContent = (translations[currentLang] && translations[currentLang].login) || 'Login';
+        btn.title = '';
+    }
+}
+
+function srRenderAccountPage() {
+    const container = document.querySelector('#page-login .page-container');
+    if (!container) return;
+    const u = srGetUser();
+    if (u) {
+        container.innerHTML = `
+            <div style="text-align:center; padding: 30px 0 20px;">
+                <div style="width:80px; height:80px; background:var(--gradient-rose); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:30px; font-weight:600;">${(u.name || '?').charAt(0).toUpperCase()}</div>
+                <h1 style="font-size:18px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">${_u('welcomeBack')}, ${srEscape ? srEscape(u.name) : u.name}</h1>
+            </div>
+            <div style="background: var(--bg-cream); padding: 20px; border-radius: 12px; margin: 20px 0; line-height: 1.9;">
+                <div style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">${_u('yourInfo')}</div>
+                <div>📞 ${u.phone || ''}</div>
+                <div>🏙 ${u.city || ''}</div>
+                <div>📍 ${u.address || ''}</div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
+                <button class="btn btn-dark" onclick="navigate('track')">${_u('myOrders')}</button>
+                <button class="btn btn-outline" onclick="srSignOut()">${_u('forgetMe')}</button>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px 20px;">
+                <h1 class="page-title">${(translations[currentLang] && translations[currentLang].login) || 'Login'}</h1>
+                <p style="color: var(--text-muted); margin-top: 20px; line-height: 1.7;">${_u('loginInfo')}</p>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:24px; flex-wrap:wrap;">
+                    <button class="btn btn-dark" onclick="navigate('track')">${(translations[currentLang] && translations[currentLang].trackOrder) || 'Track Order'}</button>
+                    <button class="btn btn-outline" onclick="navigate('shop')">${(translations[currentLang] && translations[currentLang].continueShopping) || 'Continue'}</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function srSignOut() {
+    if (!confirm(_u('forgetMe') + '?')) return;
+    srClearUser();
+    srUpdateHeaderUser();
+    showToast(_u('signedOut'));
+    navigate('home');
+}
 
 // ============================================================
 // ============ ORDER TRACKING (storefront) ===================
@@ -5829,6 +5955,7 @@ window.addEventListener('DOMContentLoaded', () => {
     srAdminInitTriggers();
     srRefreshOrdersBadge();
     handleTrackingDeepLink();
+    srUpdateHeaderUser();
 });
 </script>
 
